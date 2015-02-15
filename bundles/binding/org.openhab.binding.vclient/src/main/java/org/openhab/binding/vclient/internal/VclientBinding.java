@@ -275,7 +275,7 @@ public class VclientBinding extends
 		} else if (command.getTypeClass().equals(DecimalType.class)) {
 			state = new DecimalType(stateStr);
 		} else if (command.getTypeClass().equals(OnOffType.class)) {
-			if (vcc.equals("1") || vcc.equals("ON"))
+			if (stateStr.equals("1") || stateStr.equals("ON"))
 				state = OnOffType.ON;
 			else
 				state = OnOffType.OFF;
@@ -293,11 +293,11 @@ public class VclientBinding extends
 	private boolean submit(VclientCommandType command, Command value,
 			VclientConnector vcc) {
 		String commandStr = command.getCommandSetter() + " ";
-		if (command.equals(StringType.class)) {
+		if (command.getTypeClass().equals(StringType.class)) {
 			commandStr += value;
-		} else if (command.equals(DecimalType.class)) {
+		} else if (command.getTypeClass().equals(DecimalType.class)) {
 			commandStr += ((DecimalType) value).longValue();
-		} else if (command.equals(OnOffType.class)) {
+		} else if (command.getTypeClass().equals(OnOffType.class)) {
 			commandStr += value.equals(OnOffType.ON) ? "1" : "0";
 		} else {
 			commandStr += value;

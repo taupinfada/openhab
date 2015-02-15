@@ -151,14 +151,14 @@ public enum VclientCommandType {
 			commandSetter = "setEcoModeCC2";
 			itemClass = SwitchItem.class;
 			typeClass = OnOffType.class;
-			pattern = Pattern.compile("^(\\w*)$");
+			pattern = Pattern.compile("^(0|1)$");
 		}
 	},
 	// getRecModeCC2: Statut du mode réception du circuit de chauffage 2
 	STATE_MODE_REC_CC2 {
 		{
 			commandGetter = "getRecModeCC2";
-			commandGetter = "setRecModeCC2";
+			commandSetter = "setRecModeCC2";
 			itemClass = SwitchItem.class;
 			typeClass = OnOffType.class;
 			pattern = Pattern.compile("^(0|1)$");
