@@ -15,7 +15,12 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.openhab.core.library.types.DecimalType;
+import org.openhab.core.library.types.OnOffType;
+import org.openhab.core.library.types.StringType;
+import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,8 +96,8 @@ public class VclientConnector {
 	 */
 	public State getValue(VclientCommandType commandType) {
 		String returnStr = null;
-		logger.debug("Subbmit : " + commandType.getCommand());
-		out.println(commandType.getCommand());
+		logger.debug("Subbmit : " + commandType.getCommandGetter());
+		out.println(commandType.getCommandGetter());
 		try {
 			returnStr = in.readLine();
 		} catch (IOException e) {
@@ -101,13 +106,72 @@ public class VclientConnector {
 		Matcher match = commandType.getPattern().matcher(returnStr);
 		if (match.find()) {
 			logger.debug("return value : " + match.group(1));
-			return commandType.getType(match.group(1));
+			return getState(commandType, match.group(1));
 		} else {
 			logger.error("the return value '" + returnStr
 					+ "' don't matche with the pattern '"
 					+ commandType.getPattern() + "'");
 			return null;
 		}
+	}
+
+	/**
+	 * submit the value with the command to boiler
+	 * 
+	 * @param command
+	 * @param value
+	 * @return if command submitted is OK then return true else false
+	 */
+	public boolean setValue(VclientCommandType command, Command value) {
+		String commandStr = getCommand(command, value);
+		logger.debug("Subbmit : " + commandStr);
+		out.println(commandStr);
+		String returnStr = null;
+		try {
+			returnStr = in.readLine();
+		} catch (IOException e) {
+			logger.error("I/O error : " + e.getMessage());
+		}
+		Matcher match = Pattern.compile("^vctrld>([OK]{2})$")
+				.matcher(returnStr);
+		if (match.find()) {
+			logger.debug("return value : " + match.group(1));
+			return match.group(1).equals("OK");
+		} else {
+			logger.error("the return value '" + returnStr
+					+ "' don't matche with the pattern '"
+					+ command.getPattern() + "'");
+			return false;
+		}
+	}
+
+	public State getState(VclientCommandType typeClass, String value) {
+		State state = null;
+		if (typeClass.equals(StringType.class)) {
+			state = new StringType(value);
+		} else if (typeClass.equals(DecimalType.class)) {
+			state = new DecimalType(value);
+		} else if (typeClass.equals(OnOffType.class)) {
+			if (value.equals("1") || value.equals("ON"))
+				state = OnOffType.ON;
+			else
+				state = OnOffType.OFF;
+		}
+		return state;
+	}
+
+	public String getCommand(VclientCommandType typeClass, Command value) {
+		String command = typeClass.getCommandSetter() + " ";
+		if (typeClass.equals(StringType.class)) {
+			command += value;
+		} else if (typeClass.equals(DecimalType.class)) {
+			command += ((DecimalType) value).longValue();
+		} else if (typeClass.equals(OnOffType.class)) {
+			command += value.equals(OnOffType.ON) ? "1" : "0";
+		} else {
+			command += value;
+		}
+		return command;
 	}
 
 	/**

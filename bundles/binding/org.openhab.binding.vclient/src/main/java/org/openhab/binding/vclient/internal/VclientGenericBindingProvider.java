@@ -8,7 +8,6 @@
  */
 package org.openhab.binding.vclient.internal;
 
-import org.apache.commons.lang.StringUtils;
 import org.openhab.binding.vclient.VclientBindingConfig;
 import org.openhab.binding.vclient.VclientBindingProvider;
 import org.openhab.core.items.Item;
@@ -37,7 +36,11 @@ public class VclientGenericBindingProvider extends
 	@Override
 	public void validateItemType(Item item, String bindingConfig)
 			throws BindingConfigParseException {
-		VclientCommandType commandType = parseVclientCommandType(bindingConfig);
+		VclientCommandType commandType = VclientCommandType
+				.valueOf(bindingConfig);
+		if (commandType == null)
+			throw new BindingConfigParseException("BindingConfig '"
+					+ bindingConfig + "' is unknow");
 
 		if (!(item.getClass().equals(commandType.getItemClass()))) {
 			throw new BindingConfigParseException("item '" + item.getName()
@@ -61,13 +64,8 @@ public class VclientGenericBindingProvider extends
 
 	private VclientBindingConfig parseBindingConfig(String bindingConfig,
 			Item item) {
-		return new VclientBindingConfig(parseVclientCommandType(bindingConfig),
-				item);
-	}
-
-	private VclientCommandType parseVclientCommandType(String bindingConfig) {
-		String command = StringUtils.trim(bindingConfig);
-		return VclientCommandType.fromString(command);
+		return new VclientBindingConfig(
+				VclientCommandType.valueOf(bindingConfig), item);
 	}
 
 	@Override
