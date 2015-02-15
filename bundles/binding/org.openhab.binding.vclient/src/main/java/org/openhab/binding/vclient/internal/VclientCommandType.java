@@ -19,11 +19,7 @@ import org.openhab.core.library.types.DateTimeType;
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.StringType;
-import org.openhab.core.types.Command;
-import org.openhab.core.types.State;
 import org.openhab.core.types.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Represents all valid commands which could be processed by this binding
@@ -40,7 +36,7 @@ public enum VclientCommandType {
 			commandGetter = "getDevice";
 			itemClass = StringItem.class;
 			typeClass = StringType.class;
-			pattern = Pattern.compile("^vctrld>(\\.*)$");
+			pattern = Pattern.compile("^(\\.*)$");
 		}
 	},
 	// getSystemTime: Date system de la chaudière
@@ -49,7 +45,7 @@ public enum VclientCommandType {
 			commandGetter = "getSystemTime";
 			itemClass = DateTimeItem.class;
 			typeClass = DateTimeType.class;
-			pattern = Pattern.compile("^vctrld>(\\.*)$");
+			pattern = Pattern.compile("^(\\.*)$");
 		}
 	},
 
@@ -60,8 +56,7 @@ public enum VclientCommandType {
 			commandGetter = "getTempExt";
 			itemClass = NumberItem.class;
 			typeClass = DecimalType.class;
-			pattern = Pattern
-					.compile("^vctrld>(\\-?\\d*\\.\\d*) Grad Celsius$");
+			pattern = Pattern.compile("^(\\-?\\d*\\.\\d*) Grad Celsius$");
 		}
 	},
 	// getTempExtMoy: Température extérieure en degrés Celsius
@@ -70,8 +65,7 @@ public enum VclientCommandType {
 			commandGetter = "getTemptExtMoy";
 			itemClass = NumberItem.class;
 			typeClass = DecimalType.class;
-			pattern = Pattern
-					.compile("^vctrld>(\\-?\\d*\\.\\d*) Grad Celsius$");
+			pattern = Pattern.compile("^(\\-?\\d*\\.\\d*) Grad Celsius$");
 		}
 	},
 	// getTempDepCC2: Température de départ du circuit de chauffage 2
@@ -80,8 +74,7 @@ public enum VclientCommandType {
 			commandGetter = "getTempDepCC2";
 			itemClass = NumberItem.class;
 			typeClass = DecimalType.class;
-			pattern = Pattern
-					.compile("^vctrld>(\\-?\\d*\\.\\d*) Grad Celsius$");
+			pattern = Pattern.compile("^(\\-?\\d*\\.\\d*) Grad Celsius$");
 		}
 	},
 	// getTempIntCC2: Température intérieure pour le circuit de chauffage 2
@@ -90,8 +83,7 @@ public enum VclientCommandType {
 			commandGetter = "getTempIntCC2";
 			itemClass = NumberItem.class;
 			typeClass = DecimalType.class;
-			pattern = Pattern
-					.compile("^vctrld>(\\-?\\d*\\.\\d*) Grad Celsius$");
+			pattern = Pattern.compile("^(\\-?\\d*\\.\\d*) Grad Celsius$");
 		}
 	},
 	// getTempECS: Température eau chaude sanitaire
@@ -101,8 +93,7 @@ public enum VclientCommandType {
 			commandSetter = "setTempECS";
 			itemClass = NumberItem.class;
 			typeClass = DecimalType.class;
-			pattern = Pattern
-					.compile("^vctrld>(\\-?\\d*\\.\\d*) Grad Celsius$");
+			pattern = Pattern.compile("^(\\-?\\d*\\.\\d*) Grad Celsius$");
 		}
 	},
 	// getTempDechargeECS: Température de décharge de l'eau chaude sanitaire
@@ -111,8 +102,7 @@ public enum VclientCommandType {
 			commandGetter = "getTempDechargeECS";
 			itemClass = NumberItem.class;
 			typeClass = DecimalType.class;
-			pattern = Pattern
-					.compile("^vctrld>(\\-?\\d*\\.\\d*) Grad Celsius$");
+			pattern = Pattern.compile("^(\\-?\\d*\\.\\d*) Grad Celsius$");
 		}
 	},
 	// getTempFume: Température des gaz d'échappement en degrés Celsius
@@ -121,8 +111,7 @@ public enum VclientCommandType {
 			commandGetter = "getTempFume";
 			itemClass = NumberItem.class;
 			typeClass = DecimalType.class;
-			pattern = Pattern
-					.compile("^vctrld>(\\-?\\d*\\.\\d*) Grad Celsius$");
+			pattern = Pattern.compile("^(\\-?\\d*\\.\\d*) Grad Celsius$");
 		}
 	},
 	// getTempChaudiere: Température de la chaudière en degrès Celsius
@@ -131,8 +120,7 @@ public enum VclientCommandType {
 			commandGetter = "getTempChaudiere";
 			itemClass = NumberItem.class;
 			typeClass = DecimalType.class;
-			pattern = Pattern
-					.compile("^vctrld>(\\-?\\d*\\.\\d*) Grad Celsius$");
+			pattern = Pattern.compile("^(\\-?\\d*\\.\\d*) Grad Celsius$");
 		}
 	},
 
@@ -143,7 +131,7 @@ public enum VclientCommandType {
 			commandGetter = "getPompeStatutCC2";
 			itemClass = StringItem.class;
 			typeClass = StringType.class;
-			pattern = Pattern.compile("^vctrld>(\\w*)$");
+			pattern = Pattern.compile("^(\\w*)$");
 		}
 	},
 	// getModeCC2: Mode de fonctionnement du circuit de chauffage 2
@@ -153,7 +141,7 @@ public enum VclientCommandType {
 			commandSetter = "setModeCC2";
 			itemClass = SwitchItem.class;
 			typeClass = OnOffType.class;
-			pattern = Pattern.compile("^vctrld>(\\w*)$");
+			pattern = Pattern.compile("^(\\w*)$");
 		}
 	},
 	// getEcoModeCC2: Statut du mode économique du circuit de chauffage 2
@@ -163,7 +151,7 @@ public enum VclientCommandType {
 			commandSetter = "setEcoModeCC2";
 			itemClass = SwitchItem.class;
 			typeClass = OnOffType.class;
-			pattern = Pattern.compile("^vctrld>(\\w*)$");
+			pattern = Pattern.compile("^(\\w*)$");
 		}
 	},
 	// getRecModeCC2: Statut du mode réception du circuit de chauffage 2
@@ -173,7 +161,7 @@ public enum VclientCommandType {
 			commandGetter = "setRecModeCC2";
 			itemClass = SwitchItem.class;
 			typeClass = OnOffType.class;
-			pattern = Pattern.compile("^vctrld>(0|1)$");
+			pattern = Pattern.compile("^(0|1)$");
 		}
 	},
 	// getStatutPompeECS: Statut de la pompe d'alimentation de l'eau chaude
@@ -183,7 +171,7 @@ public enum VclientCommandType {
 			commandGetter = "getStatutPompeECS";
 			itemClass = StringItem.class;
 			typeClass = StringType.class;
-			pattern = Pattern.compile("^vctrld>(\\w*)$");
+			pattern = Pattern.compile("^(\\w*)$");
 		}
 	},
 	// getStatutCircuECS: Statut de la pompe de circulation de l'eau chaude
@@ -193,7 +181,7 @@ public enum VclientCommandType {
 			commandGetter = "getStatutCircuECS";
 			itemClass = StringItem.class;
 			typeClass = StringType.class;
-			pattern = Pattern.compile("^vctrld>(\\w*)$");
+			pattern = Pattern.compile("^(\\w*)$");
 		}
 	},
 	// getActChaudiere: Temps d'activation de la chaudière
@@ -202,7 +190,7 @@ public enum VclientCommandType {
 			commandGetter = "getActChaudiere";
 			itemClass = StringItem.class;
 			typeClass = StringType.class;
-			pattern = Pattern.compile("^vctrld>(\\w*)$");
+			pattern = Pattern.compile("^(\\w*)$");
 		}
 	},
 	// getDemarrageChaudiere: Démarrage de la chaudière
@@ -211,7 +199,7 @@ public enum VclientCommandType {
 			commandGetter = "getDemarrageChaudiere";
 			itemClass = NumberItem.class;
 			typeClass = DecimalType.class;
-			pattern = Pattern.compile("^vctrld>(\\d*\\.\\d*)$");
+			pattern = Pattern.compile("^(\\d*\\.\\d*)$");
 		}
 	},
 	// getBruleur1Heure: Temps d'activation du bruleur 1
@@ -220,7 +208,7 @@ public enum VclientCommandType {
 			commandGetter = "getBruleur1Heure";
 			itemClass = NumberItem.class;
 			typeClass = DecimalType.class;
-			pattern = Pattern.compile("^vctrld>(\\-?\\d*\\.\\d*) Heures$");
+			pattern = Pattern.compile("^(\\-?\\d*\\.\\d*) Heures$");
 		}
 	},
 	// getBruleur2Heure: Temps d'activation du bruleur 2
@@ -229,7 +217,7 @@ public enum VclientCommandType {
 			commandGetter = "getBruleur2Heure";
 			itemClass = NumberItem.class;
 			typeClass = DecimalType.class;
-			pattern = Pattern.compile("^vctrld>(\\-?\\d*\\.\\d*) Heures$");
+			pattern = Pattern.compile("^(\\-?\\d*\\.\\d*) Heures$");
 		}
 	};
 
@@ -242,9 +230,6 @@ public enum VclientCommandType {
 	Class<? extends Item> itemClass;
 	Class<? extends Type> typeClass;
 	Pattern pattern;
-
-	private static final Logger logger = LoggerFactory
-			.getLogger(VclientCommandType.class);
 
 	public String getCommandGetter() {
 		return commandGetter;

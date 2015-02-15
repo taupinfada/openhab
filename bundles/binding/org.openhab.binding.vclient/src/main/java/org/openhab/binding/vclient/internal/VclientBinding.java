@@ -13,11 +13,15 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.regex.Matcher;
 
 import org.apache.commons.lang.StringUtils;
 import org.openhab.binding.vclient.VclientBindingConfig;
 import org.openhab.binding.vclient.VclientBindingProvider;
 import org.openhab.core.binding.AbstractActiveBinding;
+import org.openhab.core.library.types.DecimalType;
+import org.openhab.core.library.types.OnOffType;
+import org.openhab.core.library.types.StringType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.osgi.framework.BundleContext;
@@ -196,7 +200,7 @@ public class VclientBinding extends
 						.getConfig(itemName);
 				if (bindingConfig != null) {
 					eventPublisher.postUpdate(bindingConfig.item.getName(),
-							vcc.getValue(bindingConfig.commandType));
+							request(bindingConfig.commandType, vcc));
 				} else {
 					logger.error("Item '" + itemName + "' inconnu");
 				}
@@ -216,6 +220,20 @@ public class VclientBinding extends
 		// BindingProviders provide a binding for the given 'itemName'.
 		logger.debug("internalReceiveCommand({},{}) is called!", itemName,
 				command);
+		VclientConnector vcc = new VclientConnector(vcontroldIp, vcontroldPort);
+		vcc.connect();
+		for (VclientBindingProvider provider : providers) {
+			VclientBindingConfig bindingConfig = provider.getConfig(itemName);
+			if (bindingConfig != null) {
+				if (!submit(bindingConfig.commandType, command, vcc))
+					logger.error(
+							"Submitting command '{}' for the item '{}' failed.",
+							command.format("%s"), itemName);
+			} else {
+				logger.error("Item '" + itemName + "' inconnu");
+			}
+		}
+		vcc.disconnect();
 	}
 
 	/**
@@ -228,6 +246,63 @@ public class VclientBinding extends
 		// BindingProviders provide a binding for the given 'itemName'.
 		logger.debug("internalReceiveUpdate({},{}) is called!", itemName,
 				newState);
+	}
+
+	/**
+	 * Convert a string value returned by the boiler into a State for openHAB
+	 * item
+	 * 
+	 * @param command
+	 *            destination State
+	 * @param vcc
+	 *            String to convert
+	 * @return valued state with String value
+	 */
+	private State request(VclientCommandType command, VclientConnector vcc) {
+		State state = null;
+		String stateStr = vcc.getValue(command.getCommandGetter());
+		Matcher match = command.pattern.matcher(stateStr);
+		if (!match.find()) {
+			logger.error(
+					"The boiler returns the String '{}' which don't matches with '{}'",
+					stateStr, command.pattern.pattern());
+			return null;
+		} else {
+			stateStr = match.group(1);
+		}
+		if (command.getTypeClass().equals(StringType.class)) {
+			state = new StringType(stateStr);
+		} else if (command.getTypeClass().equals(DecimalType.class)) {
+			state = new DecimalType(stateStr);
+		} else if (command.getTypeClass().equals(OnOffType.class)) {
+			if (vcc.equals("1") || vcc.equals("ON"))
+				state = OnOffType.ON;
+			else
+				state = OnOffType.OFF;
+		}
+		return state;
+	}
+
+	/**
+	 * Convert a openHAB command into a string command for the boiler
+	 * 
+	 * @param command
+	 * @param value
+	 * @return
+	 */
+	private boolean submit(VclientCommandType command, Command value,
+			VclientConnector vcc) {
+		String commandStr = command.getCommandSetter() + " ";
+		if (command.equals(StringType.class)) {
+			commandStr += value;
+		} else if (command.equals(DecimalType.class)) {
+			commandStr += ((DecimalType) value).longValue();
+		} else if (command.equals(OnOffType.class)) {
+			commandStr += value.equals(OnOffType.ON) ? "1" : "0";
+		} else {
+			commandStr += value;
+		}
+		return vcc.setValue(commandStr);
 	}
 
 }
