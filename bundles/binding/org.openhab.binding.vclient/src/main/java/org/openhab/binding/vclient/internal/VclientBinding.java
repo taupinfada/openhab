@@ -14,6 +14,7 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 import org.openhab.binding.vclient.VclientBindingConfig;
@@ -21,6 +22,7 @@ import org.openhab.binding.vclient.VclientBindingProvider;
 import org.openhab.core.binding.AbstractActiveBinding;
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.OnOffType;
+import org.openhab.core.library.types.OpenClosedType;
 import org.openhab.core.library.types.StringType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
@@ -139,7 +141,9 @@ public class VclientBinding extends
 			vcontroldPort = Integer.parseInt(vcontroldPortIntervalString);
 		}
 
-		// read further config parameters here ...
+		// loading available command
+		VclientAvailableCommand.getVclientAvailableCommand(vcontroldIpString,
+				vcontroldPort);
 
 		setProperlyConfigured(true);
 	}
@@ -261,24 +265,36 @@ public class VclientBinding extends
 	private State request(VclientCommandType command, VclientConnector vcc) {
 		State state = null;
 		String stateStr = vcc.getValue(command.getCommandGetter());
-		Matcher match = command.pattern.matcher(stateStr);
-		if (!match.find()) {
-			logger.error(
-					"The boiler returns the String '{}' which don't matches with '{}'",
-					stateStr, command.pattern.pattern());
+		if (stateStr == null) {
+			logger.error("The boiler returns null value");
 			return null;
-		} else {
-			stateStr = match.group(1);
+		}
+		if (command.unit != null) {
+			Matcher match = Pattern.compile("([^\\s]*)\\s*" + command.unit).matcher(
+					stateStr);
+			if (!match.find()) {
+				logger.error(
+						"The boiler returns the String '{}' which don't matches with unit '{}'",
+						stateStr, "([^\\s]*)\\s*" + command.unit);
+				return null;
+			} else {
+				stateStr = match.group(1);
+			}
 		}
 		if (command.getTypeClass().equals(StringType.class)) {
 			state = new StringType(stateStr);
 		} else if (command.getTypeClass().equals(DecimalType.class)) {
 			state = new DecimalType(stateStr);
 		} else if (command.getTypeClass().equals(OnOffType.class)) {
-			if (stateStr.equals("1") || stateStr.equals("ON"))
+			if (stateStr.equals("1") || stateStr.equals("ON") || stateStr.equals("OPEN"))
 				state = OnOffType.ON;
 			else
 				state = OnOffType.OFF;
+		} else if (command.getTypeClass().equals(OpenClosedType.class)) {
+			if (stateStr.equals("1") || stateStr.equals("ON") || stateStr.equals("OPEN"))
+				state = OpenClosedType.OPEN;
+			else
+				state = OpenClosedType.CLOSED;
 		}
 		return state;
 	}

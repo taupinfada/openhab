@@ -36,8 +36,8 @@ public class VclientGenericBindingProvider extends
 	@Override
 	public void validateItemType(Item item, String bindingConfig)
 			throws BindingConfigParseException {
-		VclientCommandType commandType = VclientCommandType
-				.valueOf(bindingConfig);
+		VclientCommandType commandType = VclientAvailableCommand
+				.getVclientAvailableCommand().getCommand(bindingConfig);
 		if (commandType == null)
 			throw new BindingConfigParseException("BindingConfig '"
 					+ bindingConfig + "' is unknow");
@@ -64,8 +64,8 @@ public class VclientGenericBindingProvider extends
 
 	private VclientBindingConfig parseBindingConfig(String bindingConfig,
 			Item item) {
-		return new VclientBindingConfig(
-				VclientCommandType.valueOf(bindingConfig), item);
+		return new VclientBindingConfig(VclientAvailableCommand
+				.getVclientAvailableCommand().getCommand(bindingConfig), item);
 	}
 
 	@Override

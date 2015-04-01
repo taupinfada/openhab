@@ -14,6 +14,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,19 +65,23 @@ public class VclientConnector {
 			s = new Socket(serverIp, serverPort);
 		} catch (UnknownHostException e) {
 			logger.error("Unknow Host : " + e.getMessage());
+			return;
 		} catch (IOException e) {
 			logger.error("I/O error : " + e.getMessage());
+			return;
 		}
 
 		try {
 			out = new PrintWriter(s.getOutputStream(), true);
 		} catch (IOException e) {
 			logger.error("Opening of output stream fails : " + e.getMessage());
+			return;
 		}
 		try {
 			in = new BufferedReader(new InputStreamReader(s.getInputStream()));
 		} catch (IOException e) {
 			logger.error("Opening of input stream fails : " + e.getMessage());
+			return;
 		}
 		logger.debug("vcontrold connect");
 	}
@@ -95,6 +101,7 @@ public class VclientConnector {
 			returnStr = in.readLine();
 		} catch (IOException e) {
 			logger.error("I/O error : " + e.getMessage());
+			return null;
 		}
 		Matcher match = Pattern.compile("^vctrld>(.*)$").matcher(returnStr);
 		if (match.find()) {
@@ -102,6 +109,69 @@ public class VclientConnector {
 			return match.group(1);
 		} else {
 			logger.error("the command '{}' failed : {}", command, returnStr);
+			return null;
+		}
+	}
+
+	/**
+	 * read the value return by vcontrold whith the command "commands"
+	 * 
+	 * @param command
+	 *            to submit
+	 * @return Boiler return String
+	 */
+	public List<String> getCommands() {
+		return getMultipleLines("commands");
+	}
+
+	/**
+	 * /** read the value return by vcontrold whith the command "commands"
+	 * 
+	 * @param command
+	 *            to submit
+	 * @return Boiler return String
+	 */
+	public List<String> getDetailCommand(String vCommand) {
+		return getMultipleLines("detail " + vCommand);
+	}
+
+	/**
+	 * read the value return by vcontrold whith the command
+	 * 
+	 * @param command
+	 *            to submit
+	 * @return Boiler return String
+	 */
+	public List<String> getMultipleLines(String command) {
+		logger.debug("Subbmit : " + command);
+		out.println(command);
+		List<String> commandsLines = new ArrayList<String>();
+		String pattern = "vctrld>";
+		StringBuffer sb = new StringBuffer();
+		char lastChar = pattern.charAt(pattern.length() - 1);
+		boolean endPrompteur = false;
+		try {
+			char ch = (char) in.read();
+			while (true) {
+				sb.append(ch);
+				if (ch == lastChar) {
+					if (sb.toString().endsWith(pattern) && endPrompteur) {
+						return commandsLines;
+					} else if (sb.toString().endsWith(pattern)) {
+						sb = new StringBuffer();
+						endPrompteur = true;
+					}
+				}
+				if (ch == '\n') {
+					logger.debug(sb.toString());
+					commandsLines.add(sb.toString());
+					sb = new StringBuffer();
+					endPrompteur = true;
+				}
+				ch = (char) in.read();
+			}
+		} catch (IOException e) {
+			logger.error("I/O error : " + e.getMessage());
 			return null;
 		}
 	}
@@ -121,6 +191,7 @@ public class VclientConnector {
 			returnStr = in.readLine();
 		} catch (IOException e) {
 			logger.error("I/O error : " + e.getMessage());
+			return false;
 		}
 		Matcher match = Pattern.compile("^vctrld>([OK]{2})$")
 				.matcher(returnStr);
