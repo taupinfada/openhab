@@ -1,0 +1,34 @@
+import org.openhab.core.library.types.*
+import org.openhab.core.persistence.*
+import org.openhab.model.script.actions.*
+
+rule "Update max and min temp_ext"
+when
+	Item Temp_Ext changed or
+	Time cron "0 0 0 * * ?" or
+	System started
+then	
+	postUpdate(Temp_Ext_Max, Temp_Ext.maximumSince(now.minusDays(1)).state)
+	postUpdate(Temp_Ext_Min, Temp_Ext.minimumSince(now.minusDays(1)).state)
+end
+
+rule "Update max and min temp_int"
+when
+	Item Temperature_RDC_INT changed or
+	Time cron "0 0 0 * * ?" or
+	System started
+then	
+	postUpdate(Temperature_RDC_INT_max, Temperature_RDC_INT.maximumSince(now.minusDays(1)).state)
+	postUpdate(Temperature_RDC_INT_min, Temperature_RDC_INT.minimumSince(now.minusDays(1)).state)
+	postUpdate(Temperature_RDC_INT_moy, Temperature_RDC_INT.averageSince(now.minusDays(1)))
+end
+
+/** shows how to use sensor values from the past */
+rule "Persistence Demo"
+when
+	Time cron "0 * * * * ?"
+then	
+	if(Temp_Ext.changedSince(now.minusMinutes(3))) {
+		logInfo("PersistenceDemo", "2 minutes ago, the temperature was " + Temp_Ext.historicState(now.minusMinutes(2)) + " degrees.")
+	}
+end

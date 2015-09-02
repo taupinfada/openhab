@@ -1,0 +1,37 @@
+sitemap demo label="Vclient"
+{
+	Frame {
+		Group item=gRDC label="Rez-de-Chaussée" icon="groundfloor"
+	}
+	Frame {
+		Group item=gExt label="Jardin" icon="garden"
+	}
+	
+	Frame label="Températures" icon="temperature"{
+		Text item=Temp_Ext valuecolor=[>25="orange",>15="green",>5="orange",<=5="blue"]{
+			Text item=Temp_Ext valuecolor=[>25="orange",>15="green",>5="orange",<=5="blue"]
+			Switch item=Graph_Temp_Ext_Sel label="Période" mappings=[0="Heure", 1="Jour", 2="Semaine", 3="Mois"]
+			Chart item=Graph_Temp_Ext service="rrd4j" period=h refresh=6000 visibility=[Graph_Temp_Ext_Sel==0, Graph_Temp_Ext_Sel=="Uninitialized"]
+			Chart item=Graph_Temp_Ext service="rrd4j" period=D refresh=30000 visibility=[Graph_Temp_Ext_Sel==1]
+			Chart item=Graph_Temp_Ext service="rrd4j" period=W refresh=30000 visibility=[Graph_Temp_Ext_Sel==2]
+			Chart item=Graph_Temp_Ext service="rrd4j" period=M refresh=30000 visibility=[Graph_Temp_Ext_Sel==3]
+		}
+		Text item=Temperature_RDC_INT valuecolor=[>25="orange",>17="green",>10="orange",>=3="blue",<=0="red"]{
+			Text item=Temperature_RDC_INT valuecolor=[>25="orange",>17="green",>10="orange",>=3="blue",<=0="red"]
+			Switch item=Graph_Temp_Ext_Sel label="Période" mappings=[0="Heure", 1="Jour", 2="Semaine", 3="Mois"]
+			Chart item=Graph_Temp_Int service="rrd4j" period=h refresh=6000 visibility=[Graph_Temp_Ext_Sel==0, Graph_Temp_Ext_Sel=="Uninitialized"]
+			Chart item=Graph_Temp_Int service="rrd4j" period=D refresh=30000 visibility=[Graph_Temp_Ext_Sel==1]
+			Chart item=Graph_Temp_Int service="rrd4j" period=W refresh=30000 visibility=[Graph_Temp_Ext_Sel==2]
+			Chart item=Graph_Temp_Int service="rrd4j" period=M refresh=30000 visibility=[Graph_Temp_Ext_Sel==3]
+		}
+	}
+	
+	Frame label="Commandes" {
+		Selection item=Boil_Mode icon=moon mappings=[STB=off, DHW="Eau Chaude", DHW_HOT="Eau Chaude + Chauffage", REDUCE="Mode Economique Forcé", NORMAL="Mode Normal Forcé"]
+		Setpoint item=Temperature_Confort minValue=3 maxValue=37 step=1
+		Setpoint item=Temperature_Reduit minValue=3 maxValue=37 step=1
+		Switch item=Eco_Mode
+		Switch item=Rec_Mode
+	}
+	
+}

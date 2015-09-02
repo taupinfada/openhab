@@ -1,0 +1,29 @@
+Group All
+
+Group gRDC 		(All)
+Group gExt 		(All)
+
+Group RDC_Salon		 	"Salon" 			<sofa> 	(gRDC)
+Group RDC_Chaufferie 	"Chaufferie" 		<corridor> 	(gRDC)
+
+Group Persist
+
+/* Temperatures */
+Group Graph_Temp_Int
+Number Temperature_RDC_INT 	"Température Intérieure [%.1f °C]"	<temperature>	(RDC_Salon, Persist) {vclient="TEMP_INT_CC2"}
+Number Temperature_RDC_INT_min 	"Température Intérieure maximale sur 24h[%.1f °C]"	<temperature>	(Persist, Graph_Temp_Int)
+Number Temperature_RDC_INT_max 	"Température Intérieure minimale sur 24h[%.1f °C]"	<temperature>	(Persist, Graph_Temp_Int)
+Number Temperature_Confort "Consigne de température de confort[%.1f °C]"	<temperature>	(RDC_Salon, Persist) {vclient="CONS_TEMP_NORMAL"}
+Number Temperature_Reduit "Consigne de température réduite[%.1f °C]"	<temperature>	(RDC_Salon, Persist) {vclient="CONS_TEMP_REDUCE"}
+
+Group Graph_Temp_Ext	"Température Extérieure" <temperature>		(gExt)
+Number Temp_Ext 		"Température Extérieure [%.1f °C]"	<temperature> (Graph_Temp_Ext, Persist) {vclient="TEMP_EXT"}
+Number Temp_Ext_Max 		"Maximum sur 24h [%.1f °C]"	<temperature> (Graph_Temp_Ext, Persist)
+Number Temp_Ext_Min 		"Minimum sur 24h [%.1f °C]"	<temperature> (Graph_Temp_Ext, Persist)
+Number Graph_Temp_Ext_Sel		"Période"
+
+/* Switch */
+Switch Eco_Mode		"Mode économique" (RDC_Chaufferie) {vclient="STATE_MODE_ECO_CC2"}
+Switch Rec_Mode		"Mode réception" <reception> (RDC_Chaufferie) {vclient="STATE_MODE_REC_CC2"}
+String Boil_Mode	"Mode de fonctionnement de la chaudière" <boiler> (RDC_Chaufferie) {vclient="MODECC2"}
+String Bruleur1_Status "Etat du bruleur 1" <fire> (RDC_Chaufferie) {vclient="STATUS_BRULEUR_1"}
