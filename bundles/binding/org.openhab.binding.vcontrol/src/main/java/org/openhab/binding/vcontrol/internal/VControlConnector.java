@@ -18,11 +18,19 @@ public class VControlConnector implements ViessmannConnector {
 	static final Logger logger = LoggerFactory
 			.getLogger(VControlConnector.class);
 
+	private static VControlConnector singleton = null;
 	private Socket s = null;
 	private BufferedReader in = null;
 	private PrintWriter out = null;
 
-	public VControlConnector() {
+	private VControlConnector() {
+	}
+
+	public static VControlConnector getVcontrolConnector() {
+		if (singleton == null) {
+			singleton = new VControlConnector();
+		}
+		return singleton;
 	}
 
 	/**
@@ -34,37 +42,34 @@ public class VControlConnector implements ViessmannConnector {
 	 * @throws IOException
 	 *             indicate that no data can be read from vcontrold
 	 */
-	public void connect(String serverIp, int serverPort) {
-		if (s != null) {
-			try {
-				s.close();
-			} catch (IOException e) {
-				logger.error("can't close connexion", e);
-			}
+	public boolean connect(String serverIp, int serverPort) {
+		if (s != null && !disconnect()) {
+			return false;
 		}
 		try {
 			s = new Socket(serverIp, serverPort);
 		} catch (UnknownHostException e) {
 			logger.error("Unknow Host : " + e.getMessage());
-			return;
+			return false;
 		} catch (IOException e) {
 			logger.error("I/O error : " + e.getMessage());
-			return;
+			return false;
 		}
 
 		try {
 			out = new PrintWriter(s.getOutputStream(), true);
 		} catch (IOException e) {
 			logger.error("Opening of output stream fails : " + e.getMessage());
-			return;
+			return false;
 		}
 		try {
 			in = new BufferedReader(new InputStreamReader(s.getInputStream()));
 		} catch (IOException e) {
 			logger.error("Opening of input stream fails : " + e.getMessage());
-			return;
+			return false;
 		}
 		logger.debug("vcontrold connect");
+		return true;
 	}
 
 	/**
@@ -158,13 +163,12 @@ public class VControlConnector implements ViessmannConnector {
 	}
 
 	/**
-	 * submit the value with the command to boiler
+	 * submit the command to boiler
 	 * 
-	 * @param command
-	 * @param value
+	 * @param commandStr
 	 * @return if command submitted is OK then return true else false
 	 */
-	public boolean setValue(String commandStr) {
+	public boolean submit(String commandStr) {
 		logger.debug("Subbmit : " + commandStr);
 		out.println(commandStr);
 		String returnStr = null;
@@ -186,23 +190,37 @@ public class VControlConnector implements ViessmannConnector {
 	}
 
 	/**
+	 * submit the value with the command to boiler
+	 * 
+	 * @param command
+	 * @param value
+	 * @return if command submitted is OK then return true else false
+	 */
+	public boolean setValue(String command, String value) {
+		return submit(command + " " + value);
+	}
+
+	/**
 	 * disconnect from vcontrold
 	 */
-	public void disconnect() {
+	public boolean disconnect() {
 		try {
 			in.close();
 		} catch (IOException e) {
 			logger.error("can't close datain", e);
+			return false;
 		}
 		out.close();
 		try {
 			s.close();
 		} catch (IOException e) {
 			logger.error("can't close connexion", e);
+			return false;
 		}
 		in = null;
 		out = null;
 		s = null;
 		logger.debug("vcontrold disconnect");
+		return true;
 	}
 }

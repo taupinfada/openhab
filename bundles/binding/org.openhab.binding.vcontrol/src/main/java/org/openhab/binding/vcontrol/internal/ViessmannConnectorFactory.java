@@ -8,7 +8,7 @@ public class ViessmannConnectorFactory {
 		switch (type) {
 		case VCONTROL_CONNECTOR:
 		default:
-			return new VControlConnector();
+			return VControlConnector.getVcontrolConnector();
 		}
 	}
 }

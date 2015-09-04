@@ -8,9 +8,9 @@
  */
 package org.openhab.binding.vcontrol.internal;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,6 +19,7 @@ import org.openhab.core.binding.BindingConfig;
 import org.openhab.core.items.Item;
 import org.openhab.core.library.types.StringType;
 import org.openhab.core.types.Command;
+import org.openhab.core.types.TypeParser;
 import org.openhab.model.item.binding.AbstractGenericBindingProvider;
 import org.openhab.model.item.binding.BindingConfigParseException;
 
@@ -92,7 +93,6 @@ public class ViessmannControlGenericBindingProvider extends
 			String bindingConfig) throws BindingConfigParseException {
 		super.processBindingConfiguration(context, item, bindingConfig);
 		ViessmannControlBindingConfig config = new ViessmannControlBindingConfig();
-		config.itemType = item.getClass();
 
 		Matcher matcher = BASE_CONFIG_PATTERN.matcher(bindingConfig);
 
@@ -100,11 +100,11 @@ public class ViessmannControlGenericBindingProvider extends
 
 			if (bindingConfig.startsWith("<") || bindingConfig.startsWith(">")) {
 				throw new BindingConfigParseException(
-						"Exec binding legacy format cannot start with '<' or '>' ");
+						"Viessmann binding legacy format cannot start with '<' or '>' ");
 			}
 
-			// backward compatibility for old format
-			parseLegacyOutBindingConfig(item, bindingConfig, config);
+			throw new BindingConfigParseException("The binding config "
+					+ bindingConfig + " can not be parse for Viessmann binding");
 
 		} else {
 
@@ -130,40 +130,160 @@ public class ViessmannControlGenericBindingProvider extends
 		addBindingConfig(item, config);
 	}
 
+	protected ViessmannControlBindingConfig parseInBindingConfig(Item item,
+			String bindingConfig, ViessmannControlBindingConfig config)
+			throws BindingConfigParseException {
+
+		Matcher matcher = IN_BINDING_PATTERN.matcher(bindingConfig);
+
+		if (!matcher.matches()) {
+			throw new BindingConfigParseException("bindingConfig '"
+					+ bindingConfig
+					+ "' doesn't represent a valid in-binding-configuration.");
+		}
+		matcher.reset();
+
+		ViessmannControlBindingConfigElement configElement;
+
+		while (matcher.find()) {
+			configElement = new ViessmannControlBindingConfigElement();
+			configElement.command = matcher.group(1).replaceAll("\\\\\"", "");
+			configElement.refreshInterval = Integer.valueOf(matcher.group(2))
+					.intValue();
+			configElement.transformation = matcher.group(3).replaceAll(
+					"\\\\\"", "\"");
+			if (ViessmannControlAvailableCommand
+					.getViessmannControlAvailableCommand().isAvailable(
+							configElement.command)) {
+				config.put(IN_BINDING_KEY, configElement);
+			} else {
+				throw new BindingConfigParseException("bindingConfig '"
+						+ bindingConfig
+						+ "' doesn't represent a valid command.");
+			}
+		}
+
+		return config;
+	}
+
+	protected ViessmannControlBindingConfig parseOutBindingConfig(Item item,
+			String bindingConfig, ViessmannControlBindingConfig config)
+			throws BindingConfigParseException {
+
+		Matcher matcher = OUT_BINDING_PATTERN.matcher(bindingConfig);
+
+		if (!matcher.matches()) {
+			throw new BindingConfigParseException("bindingConfig '"
+					+ bindingConfig
+					+ "' doesn't represent a valid in-binding-configuration.");
+		}
+		matcher.reset();
+
+		ViessmannControlBindingConfigElement configElement;
+
+		while (matcher.find()) {
+			Command command = createCommandFromString(item, matcher.group(1));
+
+			configElement = new ViessmannControlBindingConfigElement();
+			configElement.command = matcher.group(2).replaceAll("\\\\\"", "");
+
+			config.put(command, configElement);
+		}
+
+		return config;
+	}
+
+	/**
+	 * Creates a {@link Command} out of the given <code>commandAsString</code>
+	 * taking the special Commands "CHANGED" and "*" into account and
+	 * incorporating the {@link TypeParser}.
+	 * 
+	 * @param item
+	 * @param commandAsString
+	 * 
+	 * @return an appropriate Command (see {@link TypeParser} for more
+	 *         information
+	 * 
+	 * @throws BindingConfigParseException
+	 *             if the {@link TypeParser} couldn't create a command
+	 *             appropriately
+	 * 
+	 * @see {@link TypeParser}
+	 */
+	private Command createCommandFromString(Item item, String commandAsString)
+			throws BindingConfigParseException {
+
+		if (CHANGED_COMMAND_KEY.equals(commandAsString)) {
+			return CHANGED_COMMAND_KEY;
+		} else if (WILDCARD_COMMAND_KEY.equals(commandAsString)) {
+			return WILDCARD_COMMAND_KEY;
+		} else {
+			Command command = TypeParser.parseCommand(
+					item.getAcceptedCommandTypes(), commandAsString);
+
+			if (command == null) {
+				throw new BindingConfigParseException(
+						"couldn't create Command from '" + commandAsString
+								+ "' ");
+			}
+
+			return command;
+		}
+	}
+
 	@Override
 	public Class<? extends Item> getItemType(String itemName) {
-		// TODO Auto-generated method stub
-		return null;
+		ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
+				.get(itemName);
+		return config != null ? config.itemType : null;
 	}
 
 	@Override
 	public String getCommandLine(String itemName, Command command) {
-		// TODO Auto-generated method stub
-		return null;
+		try {
+			ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
+					.get(itemName);
+			return config != null ? config.get(command).command : null;
+		} catch (NullPointerException e) {
+			return null;
+		}
 	}
 
 	@Override
 	public String getCommandLine(String itemName) {
-		// TODO Auto-generated method stub
-		return null;
+		ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
+				.get(itemName);
+		return config != null && config.get(IN_BINDING_KEY) != null ? config
+				.get(IN_BINDING_KEY).command : null;
 	}
 
 	@Override
 	public int getRefreshInterval(String itemName) {
-		// TODO Auto-generated method stub
-		return 0;
+		ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
+				.get(itemName);
+		return config != null && config.get(IN_BINDING_KEY) != null ? config
+				.get(IN_BINDING_KEY).refreshInterval : 0;
 	}
 
 	@Override
 	public String getTransformation(String itemName) {
-		// TODO Auto-generated method stub
-		return null;
+		ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
+				.get(itemName);
+		return config != null && config.get(IN_BINDING_KEY) != null ? config
+				.get(IN_BINDING_KEY).transformation : null;
 	}
 
 	@Override
 	public List<String> getInBindingItemNames() {
-		// TODO Auto-generated method stub
-		return null;
+		List<String> inBindings = new ArrayList<String>();
+		for (String itemName : bindingConfigs.keySet()) {
+			ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
+					.get(itemName);
+			if (config.containsKey(IN_BINDING_KEY)) {
+				inBindings.add(itemName);
+			}
+		}
+		return inBindings;
 	}
 
 	/**
@@ -171,8 +291,9 @@ public class ViessmannControlGenericBindingProvider extends
 	 * config strings and use it to answer the requests to the Exec binding
 	 * provider.
 	 */
-	static class ExecBindingConfig extends
-			HashMap<Command, ExecBindingConfigElement> implements BindingConfig {
+	static class ViessmannControlBindingConfig extends
+			HashMap<Command, ViessmannControlBindingConfigElement> implements
+			BindingConfig {
 
 		/** generated serialVersion UID */
 		private static final long serialVersionUID = 6164971643530954095L;
@@ -185,7 +306,7 @@ public class ViessmannControlGenericBindingProvider extends
 	 * @author Felix CARDON
 	 * @since 1.7.0
 	 */
-	class ViessmannControlBindingConfig implements BindingConfig {
+	class ViessmannControlBindingConfigElement implements BindingConfig {
 		// put member fields here which holds the parsed values
 		String command;
 		int refreshInterval = 0;
@@ -193,7 +314,7 @@ public class ViessmannControlGenericBindingProvider extends
 
 		@Override
 		public String toString() {
-			return "ExecBindingConfigElement [command=" + command
+			return "ViessmannControlBindingConfig [command=" + command
 					+ ", refreshInterval=" + refreshInterval
 					+ ", transformation=" + transformation + "]";
 		}
@@ -204,16 +325,15 @@ public class ViessmannControlGenericBindingProvider extends
 		private static ViessmannControlAvailableCommand singleton = null;
 		private String host;
 		private int port;
-		private Map<String, ViessmannControlCommand> availableCommand;
+		private List<String> availableCommand;
 
 		private ViessmannControlAvailableCommand(String host, int port) {
 			this.host = host;
 			this.port = port;
-			this.availableCommand = new HashMap<String, ViessmannControlCommand>();
 			ViessmannConnector vcc = ViessmannConnectorFactory
 					.getConnector(ViessmannConnectorFactory.VCONTROL_CONNECTOR);
 			vcc.connect(host, port);
-			List<String> commandsList = vcc.getCommands();
+			this.availableCommand = vcc.getCommands();
 			vcc.disconnect();
 		}
 
@@ -234,22 +354,12 @@ public class ViessmannControlGenericBindingProvider extends
 			return singleton;
 		}
 
-		public ViessmannControlCommand getCommand(String command) {
+		public boolean isAvailable(String command) {
 			if (availableCommand != null) {
-				return availableCommand.get(command);
+				return availableCommand.contains(command);
 			} else {
-				return null;
+				return false;
 			}
 		}
 	}
-
-	class ViessmannControlCommand implements Command {
-
-		@Override
-		public String format(String pattern) {
-			return null;
-		}
-
-	}
-
 }
