@@ -274,6 +274,14 @@ public class ViessmannControlGenericBindingProvider extends
 	}
 
 	@Override
+	public Pattern getExtractValuePattern(String itemName) {
+		ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
+				.get(itemName);
+		return config != null && config.get(IN_BINDING_KEY) != null ? config
+				.get(IN_BINDING_KEY).extractValuePattern : null;
+	}
+
+	@Override
 	public List<String> getInBindingItemNames() {
 		List<String> inBindings = new ArrayList<String>();
 		for (String itemName : bindingConfigs.keySet()) {
@@ -309,57 +317,17 @@ public class ViessmannControlGenericBindingProvider extends
 	class ViessmannControlBindingConfigElement implements BindingConfig {
 		// put member fields here which holds the parsed values
 		String command;
+		/** RegEx to extract the value */
+		Pattern extractValuePattern = null;
 		int refreshInterval = 0;
 		String transformation = null;
 
 		@Override
 		public String toString() {
 			return "ViessmannControlBindingConfig [command=" + command
+					+ ", extractValuePattern=" + extractValuePattern
 					+ ", refreshInterval=" + refreshInterval
 					+ ", transformation=" + transformation + "]";
-		}
-	}
-
-	static class ViessmannControlAvailableCommand {
-
-		private static ViessmannControlAvailableCommand singleton = null;
-		private String host;
-		private int port;
-		private List<String> availableCommand;
-
-		private ViessmannControlAvailableCommand(String host, int port) {
-			this.host = host;
-			this.port = port;
-			ViessmannConnector vcc = ViessmannConnectorFactory
-					.getConnector(ViessmannConnectorFactory.VCONTROL_CONNECTOR);
-			vcc.connect(host, port);
-			this.availableCommand = vcc.getCommands();
-			vcc.disconnect();
-		}
-
-		public static ViessmannControlAvailableCommand getViessmannControlAvailableCommand(
-				String host, int port) {
-			// If we change host, then we reload the available commands
-			if (singleton != null
-					&& (singleton.host != host || singleton.port != port)) {
-				singleton = null;
-			}
-			if (singleton == null) {
-				singleton = new ViessmannControlAvailableCommand(host, port);
-			}
-			return singleton;
-		}
-
-		public static ViessmannControlAvailableCommand getViessmannControlAvailableCommand() {
-			return singleton;
-		}
-
-		public boolean isAvailable(String command) {
-			if (availableCommand != null) {
-				return availableCommand.contains(command);
-			} else {
-				return false;
-			}
 		}
 	}
 }

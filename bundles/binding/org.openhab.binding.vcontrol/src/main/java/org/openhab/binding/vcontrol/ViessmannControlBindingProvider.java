@@ -9,6 +9,7 @@
 package org.openhab.binding.vcontrol;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.openhab.core.binding.BindingProvider;
 import org.openhab.core.items.Item;
@@ -86,11 +87,22 @@ public interface ViessmannControlBindingProvider extends BindingProvider {
 	String getTransformation(String itemName);
 
 	/**
+	 * Returns the pattern to use according to <code>itemName</code> . Is used
+	 * by In-Binding.
+	 * 
+	 * @param itemName
+	 *            the item for which to find a transformation rule
+	 * 
+	 * @return the matching pattern or <code>null</code> if no matching pattern
+	 *         could be found.
+	 */
+	Pattern getExtractValuePattern(String itemName);
+
+	/**
 	 * Returns all items which are mapped to a Exec-In-Binding
 	 * 
 	 * @return item which are mapped to a Exec-In-Binding
 	 */
 	List<String> getInBindingItemNames();
-
 
 }
