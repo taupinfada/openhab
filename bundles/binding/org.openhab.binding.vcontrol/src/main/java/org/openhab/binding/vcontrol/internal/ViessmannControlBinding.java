@@ -83,6 +83,7 @@ public class ViessmannControlBinding extends
 			.compile("(.*?)\\((.*)\\)");
 
 	public ViessmannControlBinding() {
+		logger.debug("call ViessmannControlBinding");
 	}
 
 	/**
@@ -213,6 +214,11 @@ public class ViessmannControlBinding extends
 		for (ViessmannControlBindingProvider provider : providers) {
 			for (String itemName : provider.getInBindingItemNames()) {
 				String commandLine = provider.getCommandLine(itemName);
+				if (!vc.isAvailableCommand(commandLine)) {
+					logger.error("bindingConfig : '" + commandLine
+							+ "' doesn't represent a valid command.");
+					continue;
+				}
 				int refreshInterval = provider.getRefreshInterval(itemName);
 				String transformation = provider.getTransformation(itemName);
 
@@ -347,7 +353,7 @@ public class ViessmannControlBinding extends
 				return StringType.valueOf(transformedResponse);
 			}
 		} catch (Exception e) {
-			logger.debug("Couldn't create state of type '{}' for value '{}'",
+			logger.error("Couldn't create state of type '{}' for value '{}'",
 					itemType, transformedResponse);
 			return StringType.valueOf(transformedResponse);
 		}
@@ -363,6 +369,48 @@ public class ViessmannControlBinding extends
 		// BindingProviders provide a binding for the given 'itemName'.
 		logger.debug("internalReceiveCommand({},{}) is called!", itemName,
 				command);
+		ViessmannControlBindingProvider provider = findFirstMatchingBindingProvider(
+				itemName, command);
+
+		if (provider == null) {
+			logger.warn(
+					"doesn't find matching binding provider [itemName={}, command={}]",
+					itemName, command);
+			return;
+		}
+
+		String commandLine = provider.getCommandLine(itemName, command);
+
+		if (commandLine != null && !commandLine.isEmpty()) {
+
+			commandLine = String.format(commandLine, Calendar.getInstance()
+					.getTime(), command, itemName);
+			ViessmannConnector vc = ViessmannConnectorFactory
+					.getConnector(ViessmannConnectorFactory.VCONTROL_CONNECTOR);
+			vc.connect(vcontroldIp, vcontroldPort);
+			if (!vc.submit(commandLine))
+				logger.error("Unable to set {} with the command : '{}'",
+						itemName, commandLine);
+			vc.disconnect();
+		}
+	}
+
+	private ViessmannControlBindingProvider findFirstMatchingBindingProvider(
+			String itemName, Command command) {
+
+		ViessmannControlBindingProvider firstMatchingProvider = null;
+
+		for (ViessmannControlBindingProvider provider : this.providers) {
+
+			String commandLine = provider.getCommandLine(itemName, command);
+
+			if (commandLine != null) {
+				firstMatchingProvider = provider;
+				break;
+			}
+		}
+
+		return firstMatchingProvider;
 	}
 
 	/**

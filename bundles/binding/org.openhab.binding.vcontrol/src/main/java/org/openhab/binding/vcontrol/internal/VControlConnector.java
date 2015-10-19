@@ -4,10 +4,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -89,10 +92,14 @@ public class VControlConnector implements ViessmannConnector {
 			logger.error("I/O error : " + e.getMessage());
 			return null;
 		}
-		Matcher match = Pattern.compile("^vctrld>(.*)$").matcher(returnStr);
+		Matcher match = Pattern.compile(
+				"^(vctrld>)?(\\S*) ?"
+						+ VControlAvailableCommand.getVControlAvailableCommand(
+								this).getUnit(command) + "\\s*$").matcher(
+				returnStr);
 		if (match.find()) {
-			logger.debug("return value : " + match.group(1));
-			return match.group(1);
+			logger.debug("return value : " + match.group(2));
+			return match.group(2);
 		} else {
 			logger.error("the command '{}' failed : {}", command, returnStr);
 			return null;
@@ -107,7 +114,11 @@ public class VControlConnector implements ViessmannConnector {
 	 * @return Boiler return String
 	 */
 	public List<String> getCommands() {
-		return getMultipleLines("commands");
+		List<String> commands = new ArrayList<String>();
+		for (String command : getMultipleLines("commands")) {
+			commands.add(command.split(":")[0]);
+		}
+		return commands;
 	}
 
 	/**
@@ -117,7 +128,7 @@ public class VControlConnector implements ViessmannConnector {
 	 *            to submit
 	 * @return Boiler return String
 	 */
-	public List<String> getDetailCommand(String vCommand) {
+	private List<String> getDetailCommand(String vCommand) {
 		return getMultipleLines("detail " + vCommand);
 	}
 
@@ -128,7 +139,7 @@ public class VControlConnector implements ViessmannConnector {
 	 *            to submit
 	 * @return Boiler return String
 	 */
-	public List<String> getMultipleLines(String command) {
+	private List<String> getMultipleLines(String command) {
 		logger.debug("Subbmit : " + command);
 		out.println(command);
 		List<String> commandsLines = new ArrayList<String>();
@@ -190,17 +201,6 @@ public class VControlConnector implements ViessmannConnector {
 	}
 
 	/**
-	 * submit the value with the command to boiler
-	 * 
-	 * @param command
-	 * @param value
-	 * @return if command submitted is OK then return true else false
-	 */
-	public boolean setValue(String command, String value) {
-		return submit(command + " " + value);
-	}
-
-	/**
 	 * disconnect from vcontrold
 	 */
 	public boolean disconnect() {
@@ -223,4 +223,97 @@ public class VControlConnector implements ViessmannConnector {
 		logger.debug("vcontrold disconnect");
 		return true;
 	}
+
+	@Override
+	public boolean isAvailableCommand(String command) {
+		return VControlAvailableCommand.getVControlAvailableCommand(this)
+				.isAvailable(command);
+	}
+
+	private static class VControlAvailableCommand {
+
+		private static VControlAvailableCommand singleton = null;
+		private InetAddress host;
+		private int port;
+		private List<String> availableCommands;
+		private Map<String, String> commandUnit;
+		private Map<String, List<String>> acceptedValues;
+
+		private static final Pattern TYPE_PATTERN = Pattern
+				.compile("Type: (.*)");
+		private static final Pattern UNIT_PATTERN = Pattern
+				.compile("Einheit: (.*)");
+		private static final Pattern ENUM_PATTERN = Pattern
+				.compile("Enum Bytes:(.*) Text");
+
+		private VControlAvailableCommand(VControlConnector vcc) {
+			this.host = vcc.s.getInetAddress();
+			this.port = vcc.s.getPort();
+			this.availableCommands = vcc.getCommands();
+			commandUnit = new HashMap<String, String>();
+			acceptedValues = new HashMap<String, List<String>>();
+			for (String command : availableCommands) {
+				List<String> detailsCommand = vcc.getDetailCommand(command);
+				for (String detail : detailsCommand) {
+					Matcher typeMatcher = TYPE_PATTERN.matcher(detail);
+					if (typeMatcher.find()) {
+						if (typeMatcher.group(1).equals("enum")) {
+							commandUnit.put(command, null);
+							acceptedValues
+									.put(command, new ArrayList<String>());
+						}
+					}
+
+					Matcher unitMatcher = UNIT_PATTERN.matcher(detail);
+					if (unitMatcher.find()) {
+						logger.debug("The unit use for {} is {}.", command,
+								unitMatcher.group(1));
+						String unit = unitMatcher.group(1).equals("(null)") ? ""
+								: unitMatcher.group(1);
+						commandUnit.put(command, unit);
+					}
+
+					Matcher valuesMatcher = ENUM_PATTERN.matcher(detail);
+					if (valuesMatcher.find()) {
+						if (!acceptedValues.containsKey(command)) {
+							acceptedValues
+									.put(command, new ArrayList<String>());
+						}
+						logger.debug(
+								"add value {} in the accepted values for the command {}",
+								valuesMatcher.group(1), command);
+						acceptedValues.get(command).add(valuesMatcher.group(1));
+					}
+				}
+			}
+		}
+
+		public static VControlAvailableCommand getVControlAvailableCommand(
+				VControlConnector vcc) {
+			// If we change host, then we reload the available commands
+			if (singleton != null
+					&& (!singleton.host.equals(vcc.s.getInetAddress()) || singleton.port != vcc.s
+							.getPort())) {
+				singleton = null;
+			}
+			if (singleton == null) {
+				singleton = new VControlAvailableCommand(vcc);
+			}
+			return singleton;
+		}
+
+		public boolean isAvailable(String command) {
+			if (availableCommands != null) {
+				return availableCommands.contains(command);
+			} else {
+				return false;
+			}
+		}
+
+		public String getUnit(String command) {
+			return commandUnit.containsKey(command) ? commandUnit.get(command)
+					: "";
+		}
+	}
+
 }

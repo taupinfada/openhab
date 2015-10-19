@@ -8,10 +8,10 @@ public interface ViessmannConnector {
 	public String getValue(String command);
 
 	public List<String> getCommands();
+	
+	public boolean isAvailableCommand(String command);
 
-	public List<String> getDetailCommand(String vCommand);
-
-	public boolean setValue(String command, String valueS);
+	public boolean submit(String command);
 
 	public boolean disconnect();
 }

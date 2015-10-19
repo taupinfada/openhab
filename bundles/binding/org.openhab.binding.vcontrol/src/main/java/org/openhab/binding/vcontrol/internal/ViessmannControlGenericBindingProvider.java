@@ -93,6 +93,7 @@ public class ViessmannControlGenericBindingProvider extends
 			String bindingConfig) throws BindingConfigParseException {
 		super.processBindingConfiguration(context, item, bindingConfig);
 		ViessmannControlBindingConfig config = new ViessmannControlBindingConfig();
+		config.itemType = item.getClass();
 
 		Matcher matcher = BASE_CONFIG_PATTERN.matcher(bindingConfig);
 
@@ -152,15 +153,7 @@ public class ViessmannControlGenericBindingProvider extends
 					.intValue();
 			configElement.transformation = matcher.group(3).replaceAll(
 					"\\\\\"", "\"");
-			if (ViessmannControlAvailableCommand
-					.getViessmannControlAvailableCommand().isAvailable(
-							configElement.command)) {
-				config.put(IN_BINDING_KEY, configElement);
-			} else {
-				throw new BindingConfigParseException("bindingConfig '"
-						+ bindingConfig
-						+ "' doesn't represent a valid command.");
-			}
+			config.put(IN_BINDING_KEY, configElement);
 		}
 
 		return config;
