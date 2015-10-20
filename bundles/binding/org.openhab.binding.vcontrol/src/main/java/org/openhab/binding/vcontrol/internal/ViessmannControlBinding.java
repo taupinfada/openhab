@@ -219,7 +219,10 @@ public class ViessmannControlBinding extends
 							+ "' doesn't represent a valid command.");
 					continue;
 				}
-				int refreshInterval = provider.getRefreshInterval(itemName);
+				long refreshInterval = provider.getRefreshInterval(itemName);
+				if(refreshInterval == 0){
+					refreshInterval = this.refreshInterval;
+				}
 				String transformation = provider.getTransformation(itemName);
 
 				Long lastUpdateTimeStamp = lastUpdateMap.get(itemName);

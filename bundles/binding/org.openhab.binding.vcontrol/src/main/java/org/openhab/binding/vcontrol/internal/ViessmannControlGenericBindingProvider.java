@@ -149,8 +149,12 @@ public class ViessmannControlGenericBindingProvider extends
 		while (matcher.find()) {
 			configElement = new ViessmannControlBindingConfigElement();
 			configElement.command = matcher.group(1).replaceAll("\\\\\"", "");
-			configElement.refreshInterval = Integer.valueOf(matcher.group(2))
-					.intValue();
+			if (!matcher.group(2).isEmpty()) {
+				configElement.refreshInterval = Integer.valueOf(
+						matcher.group(2)).intValue();
+			} else {
+				configElement.refreshInterval = 0;
+			}
 			configElement.transformation = matcher.group(3).replaceAll(
 					"\\\\\"", "\"");
 			config.put(IN_BINDING_KEY, configElement);
