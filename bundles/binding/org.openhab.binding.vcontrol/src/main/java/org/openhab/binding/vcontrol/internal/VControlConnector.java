@@ -92,6 +92,10 @@ public class VControlConnector implements ViessmannConnector {
 			logger.error("I/O error : " + e.getMessage());
 			return null;
 		}
+		if (returnStr == null) {
+			logger.error("the command '{}' returned nothing", command);
+			return null;
+		}
 		Matcher match = Pattern.compile(
 				"^(vctrld>)?(\\S*) ?"
 						+ VControlAvailableCommand.getVControlAvailableCommand(
@@ -115,8 +119,15 @@ public class VControlConnector implements ViessmannConnector {
 	 */
 	public List<String> getCommands() {
 		List<String> commands = new ArrayList<String>();
+		commands.addAll(getCommandsWithDescripting().keySet());
+		return commands;
+	}
+
+	public Map<String, String> getCommandsWithDescripting() {
+		Map<String, String> commands = new HashMap<String, String>();
 		for (String command : getMultipleLines("commands")) {
-			commands.add(command.split(":")[0]);
+			commands.put(command.split(":")[0].trim(),
+					command.split(":")[1].trim());
 		}
 		return commands;
 	}
@@ -224,10 +235,33 @@ public class VControlConnector implements ViessmannConnector {
 		return true;
 	}
 
-	@Override
 	public boolean isAvailableCommand(String command) {
 		return VControlAvailableCommand.getVControlAvailableCommand(this)
 				.isAvailable(command);
+	}
+
+	@Override
+	public String toString() {
+		String toString = "";
+		VControlAvailableCommand vcac = VControlAvailableCommand
+				.getVControlAvailableCommand(this);
+		for (String command : vcac.getAvailableCommands().keySet()) {
+			toString += "#### Command '" + command + "' : "
+					+ vcac.getAvailableCommands().get(command) + "\n";
+			if (vcac.getUnit(command) != null
+					&& !vcac.getUnit(command).isEmpty()) {
+				toString += "\tUnit '" + vcac.getUnit(command) + "'\n";
+			}
+			if (vcac.getAcceptedValues(command) != null
+					&& vcac.getAcceptedValues(command).size() > 0) {
+				toString += "\taccepted Values :\n";
+				for (String acceptedValue : vcac.getAcceptedValues(command)) {
+					toString += "\t - " + acceptedValue + "\n";
+				}
+			}
+			toString += "\n";
+		}
+		return toString;
 	}
 
 	private static class VControlAvailableCommand {
@@ -235,7 +269,7 @@ public class VControlConnector implements ViessmannConnector {
 		private static VControlAvailableCommand singleton = null;
 		private InetAddress host;
 		private int port;
-		private List<String> availableCommands;
+		private Map<String, String> availableCommands;
 		private Map<String, String> commandUnit;
 		private Map<String, List<String>> acceptedValues;
 
@@ -249,23 +283,31 @@ public class VControlConnector implements ViessmannConnector {
 		private VControlAvailableCommand(VControlConnector vcc) {
 			this.host = vcc.s.getInetAddress();
 			this.port = vcc.s.getPort();
-			this.availableCommands = vcc.getCommands();
+			this.availableCommands = vcc.getCommandsWithDescripting();
 			commandUnit = new HashMap<String, String>();
 			acceptedValues = new HashMap<String, List<String>>();
-			for (String command : availableCommands) {
+			for (String command : availableCommands.keySet()) {
 				List<String> detailsCommand = vcc.getDetailCommand(command);
 				for (String detail : detailsCommand) {
 					Matcher typeMatcher = TYPE_PATTERN.matcher(detail);
-					if (typeMatcher.find()) {
+					// We save only the first Type, which matches with the
+					// submit or return values
+					// If a second type find, it matches with the state of
+					// submit request (OK or NOT OK)
+					// This state does'nt interest in our context
+					if (typeMatcher.find() && !commandUnit.containsKey(command)) {
 						if (typeMatcher.group(1).equals("enum")) {
 							commandUnit.put(command, null);
 							acceptedValues
 									.put(command, new ArrayList<String>());
+						} else {
+							acceptedValues.put(command, null);
+							commandUnit.put(command, "");
 						}
 					}
 
 					Matcher unitMatcher = UNIT_PATTERN.matcher(detail);
-					if (unitMatcher.find()) {
+					if (unitMatcher.find() && commandUnit.get(command) != null) {
 						logger.debug("The unit use for {} is {}.", command,
 								unitMatcher.group(1));
 						String unit = unitMatcher.group(1).equals("(null)") ? ""
@@ -274,7 +316,8 @@ public class VControlConnector implements ViessmannConnector {
 					}
 
 					Matcher valuesMatcher = ENUM_PATTERN.matcher(detail);
-					if (valuesMatcher.find()) {
+					if (valuesMatcher.find()
+							&& acceptedValues.get(command) != null) {
 						if (!acceptedValues.containsKey(command)) {
 							acceptedValues
 									.put(command, new ArrayList<String>());
@@ -304,7 +347,7 @@ public class VControlConnector implements ViessmannConnector {
 
 		public boolean isAvailable(String command) {
 			if (availableCommands != null) {
-				return availableCommands.contains(command);
+				return availableCommands.keySet().contains(command);
 			} else {
 				return false;
 			}
@@ -314,6 +357,16 @@ public class VControlConnector implements ViessmannConnector {
 			return commandUnit.containsKey(command) ? commandUnit.get(command)
 					: "";
 		}
+
+		public List<String> getAcceptedValues(String command) {
+			return acceptedValues.containsKey(command) ? acceptedValues
+					.get(command) : null;
+		}
+
+		public Map<String, String> getAvailableCommands() {
+			return availableCommands;
+		}
+
 	}
 
 }

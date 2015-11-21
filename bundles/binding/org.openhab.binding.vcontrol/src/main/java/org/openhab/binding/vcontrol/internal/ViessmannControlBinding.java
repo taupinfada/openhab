@@ -8,6 +8,8 @@
  */
 package org.openhab.binding.vcontrol.internal;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -76,11 +78,19 @@ public class ViessmannControlBinding extends
 	 */
 	private long refreshInterval = 60000;
 
+	/**
+	 * The path to save the available commands
+	 */
+	private String avlbCmdFilePath;
+
 	private Map<String, Long> lastUpdateMap = new HashMap<String, Long>();
 
 	/** RegEx to extract a parse a function String <code>'(.*?)\((.*)\)'</code> */
 	private static final Pattern EXTRACT_FUNCTION_PATTERN = Pattern
 			.compile("(.*?)\\((.*)\\)");
+
+	protected static final Command WILDCARD_COMMAND_KEY = StringType
+			.valueOf("*");
 
 	public ViessmannControlBinding() {
 		logger.debug("call ViessmannControlBinding");
@@ -157,6 +167,28 @@ public class ViessmannControlBinding extends
 			vcontroldPort = Integer.parseInt(vcontroldPortIntervalString);
 		}
 
+		// write the availables commands file if it change
+		String vcontrolCmdFile = (String) configuration
+				.get("availableCommandFile");
+		if (StringUtils.isNotBlank(vcontrolCmdFile)
+				&& !vcontrolCmdFile.equals(avlbCmdFilePath)) {
+			ViessmannConnector vc = ViessmannConnectorFactory
+					.getConnector(ViessmannConnectorFactory.VCONTROL_CONNECTOR);
+			vc.connect(vcontroldIp, vcontroldPort);
+			File f = new File(vcontrolCmdFile);
+
+			try {
+				FileWriter fw = new FileWriter(f);
+				fw.write(vc.toString());
+				fw.write("\r\n");
+				fw.close();
+			} catch (IOException exception) {
+				logger.error("Erreur lors de la lecture : {}",
+						exception.getMessage());
+			}
+			vc.disconnect();
+		}
+		avlbCmdFilePath = vcontrolCmdFile;
 		setProperlyConfigured(true);
 	}
 
@@ -220,7 +252,7 @@ public class ViessmannControlBinding extends
 					continue;
 				}
 				long refreshInterval = provider.getRefreshInterval(itemName);
-				if(refreshInterval == 0){
+				if (refreshInterval == 0) {
 					refreshInterval = this.refreshInterval;
 				}
 				String transformation = provider.getTransformation(itemName);
@@ -384,6 +416,10 @@ public class ViessmannControlBinding extends
 
 		String commandLine = provider.getCommandLine(itemName, command);
 
+		if (commandLine == null) {
+			commandLine = provider.getCommandLine(itemName, WILDCARD_COMMAND_KEY); 
+		}
+
 		if (commandLine != null && !commandLine.isEmpty()) {
 
 			commandLine = String.format(commandLine, Calendar.getInstance()
@@ -410,6 +446,18 @@ public class ViessmannControlBinding extends
 			if (commandLine != null) {
 				firstMatchingProvider = provider;
 				break;
+			}
+		}
+
+		if (firstMatchingProvider == null) {
+
+			for (ViessmannControlBindingProvider provider : this.providers) {
+				String commandLine = provider.getCommandLine(itemName,
+						WILDCARD_COMMAND_KEY);
+				if (commandLine != null) {
+					firstMatchingProvider = provider;
+					break;
+				}
 			}
 		}
 

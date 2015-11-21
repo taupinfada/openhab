@@ -14,4 +14,6 @@ public interface ViessmannConnector {
 	public boolean submit(String command);
 
 	public boolean disconnect();
+	
+	public String toString();
 }

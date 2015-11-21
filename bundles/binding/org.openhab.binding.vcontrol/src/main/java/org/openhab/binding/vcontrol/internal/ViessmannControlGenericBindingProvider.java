@@ -73,7 +73,6 @@ public class ViessmannControlGenericBindingProvider extends
 	/**
 	 * @{inheritDoc
 	 */
-	@Override
 	public void validateItemType(Item item, String bindingConfig)
 			throws BindingConfigParseException {
 		// if (!(item instanceof SwitchItem || item instanceof DimmerItem)) {
@@ -228,14 +227,12 @@ public class ViessmannControlGenericBindingProvider extends
 		}
 	}
 
-	@Override
 	public Class<? extends Item> getItemType(String itemName) {
 		ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
 				.get(itemName);
 		return config != null ? config.itemType : null;
 	}
 
-	@Override
 	public String getCommandLine(String itemName, Command command) {
 		try {
 			ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
@@ -246,7 +243,6 @@ public class ViessmannControlGenericBindingProvider extends
 		}
 	}
 
-	@Override
 	public String getCommandLine(String itemName) {
 		ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
 				.get(itemName);
@@ -254,7 +250,6 @@ public class ViessmannControlGenericBindingProvider extends
 				.get(IN_BINDING_KEY).command : null;
 	}
 
-	@Override
 	public int getRefreshInterval(String itemName) {
 		ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
 				.get(itemName);
@@ -262,7 +257,6 @@ public class ViessmannControlGenericBindingProvider extends
 				.get(IN_BINDING_KEY).refreshInterval : 0;
 	}
 
-	@Override
 	public String getTransformation(String itemName) {
 		ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
 				.get(itemName);
@@ -270,7 +264,6 @@ public class ViessmannControlGenericBindingProvider extends
 				.get(IN_BINDING_KEY).transformation : null;
 	}
 
-	@Override
 	public Pattern getExtractValuePattern(String itemName) {
 		ViessmannControlBindingConfig config = (ViessmannControlBindingConfig) bindingConfigs
 				.get(itemName);
@@ -278,7 +271,6 @@ public class ViessmannControlGenericBindingProvider extends
 				.get(IN_BINDING_KEY).extractValuePattern : null;
 	}
 
-	@Override
 	public List<String> getInBindingItemNames() {
 		List<String> inBindings = new ArrayList<String>();
 		for (String itemName : bindingConfigs.keySet()) {
