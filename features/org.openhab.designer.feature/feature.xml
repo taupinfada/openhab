@@ -405,6 +405,13 @@
          unpack="false"/>
 
    <plugin
+         id="org.openhab.action.mqtt"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>   
+
+   <plugin
          id="org.openhab.binding.astro"
          download-size="0"
          install-size="0"
@@ -476,6 +483,13 @@
 
    <plugin
          id="org.openhab.binding.ecobee"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.openhab.action.dscalarm"
          download-size="0"
          install-size="0"
          version="0.0.0"

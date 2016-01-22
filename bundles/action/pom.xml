@@ -33,6 +33,8 @@
     <module>org.openhab.action.tinkerforge</module>
     <module>org.openhab.action.harmonyhub</module>
     <module>org.openhab.action.ecobee</module>
+    <module>org.openhab.action.mqtt</module>
+    <module>org.openhab.action.dscalarm</module>
   </modules>
 
 </project>
